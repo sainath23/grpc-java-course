@@ -13,34 +13,47 @@ import com.proto.greet.GreetWithDeadlineResponse;
 import com.proto.greet.Greeting;
 import com.proto.greet.LongGreetRequest;
 import com.proto.greet.LongGreetResponse;
+import io.grpc.ChannelCredentials;
 import io.grpc.Deadline;
+import io.grpc.Grpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.TlsChannelCredentials;
 import io.grpc.stub.StreamObserver;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class GreetingClient {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         System.out.println("Hello I am gRPC client");
         new GreetingClient().run();
     }
 
-    private void run() {
+    private void run() throws IOException {
         ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50051)
                 .usePlaintext()
                 .build();
 
-        //doUnaryCall(channel);
+        ChannelCredentials credentials = TlsChannelCredentials.newBuilder()
+                        .trustManager(new File("ssl/ca.crt"))
+                                .build();
+
+        ManagedChannel securedChannel = Grpc.newChannelBuilder(
+                        "localhost:50051", credentials)
+                .build();
+
+        doUnaryCall(securedChannel);
         //doServerStreamingCall(channel);
         //doClientStreamingCall(channel);
         //doBiDirectionalStreamingCall(channel);
-        doUnaryCallWithDeadline(channel);
+        //doUnaryCallWithDeadline(channel);
 
         System.out.println("Shutting down channel");
         channel.shutdown();
