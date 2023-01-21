@@ -1,5 +1,7 @@
 package com.sainath.grpc.greeting.server;
 
+import com.proto.greet.GreetEveryoneRequest;
+import com.proto.greet.GreetEveryoneResponse;
 import com.proto.greet.GreetManyTimesRequest;
 import com.proto.greet.GreetManyTimesResponse;
 import com.proto.greet.GreetRequest;
@@ -82,6 +84,32 @@ public class GreetServiceImpl extends GreetServiceImplBase {
                 // client is done
                 LongGreetResponse response = LongGreetResponse.newBuilder().setResult(result).build();
                 responseObserver.onNext(response);
+                responseObserver.onCompleted();
+            }
+        };
+
+        return requestStreamObserver;
+    }
+
+    @Override
+    public StreamObserver<GreetEveryoneRequest> greetEveryone(StreamObserver<GreetEveryoneResponse> responseObserver) {
+
+        StreamObserver<GreetEveryoneRequest> requestStreamObserver = new StreamObserver<GreetEveryoneRequest>() {
+            @Override
+            public void onNext(GreetEveryoneRequest value) {
+                String result = "Hello " + value.getGreeting().getFirstName();
+                GreetEveryoneResponse response = GreetEveryoneResponse.newBuilder().setResult(result).build();
+
+                responseObserver.onNext(response);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+
+            }
+
+            @Override
+            public void onCompleted() {
                 responseObserver.onCompleted();
             }
         };

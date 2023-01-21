@@ -1,5 +1,7 @@
 package com.sainath.grpc.greeting.client;
 
+import com.proto.greet.GreetEveryoneRequest;
+import com.proto.greet.GreetEveryoneResponse;
 import com.proto.greet.GreetManyTimesRequest;
 import com.proto.greet.GreetRequest;
 import com.proto.greet.GreetResponse;
@@ -13,6 +15,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -30,7 +33,8 @@ public class GreetingClient {
 
         //doUnaryCall(channel);
         //doServerStreamingCall(channel);
-        doClientStreamingCall(channel);
+        //doClientStreamingCall(channel);
+        doBiDirectionalStreamingCall(channel);
 
         System.out.println("Shutting down channel");
         channel.shutdown();
@@ -92,6 +96,7 @@ public class GreetingClient {
             @Override
             public void onError(Throwable t) {
                 // We get an error from server
+                countDownLatch.countDown();
             }
 
             @Override
@@ -110,6 +115,53 @@ public class GreetingClient {
         requestStreamObserver.onNext(getLongGreetRequest("Parkar"));
         System.out.println("Sending message #4");
         requestStreamObserver.onNext(getLongGreetRequest("Foo"));
+
+        requestStreamObserver.onCompleted();
+
+        try {
+            countDownLatch.await(3, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void doBiDirectionalStreamingCall(ManagedChannel channel) {
+        System.out.println("Creating a stub");
+
+        // Created greet service client (async)
+        GreetServiceStub asyncClient = GreetServiceGrpc.newStub(channel);
+
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+
+        StreamObserver<GreetEveryoneRequest> requestStreamObserver = asyncClient.greetEveryone(new StreamObserver<GreetEveryoneResponse>() {
+            @Override
+            public void onNext(GreetEveryoneResponse value) {
+                System.out.println("Response from server: " + value.getResult());
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                countDownLatch.countDown();
+            }
+
+            @Override
+            public void onCompleted() {
+                System.out.println("Server is done sending data");
+                countDownLatch.countDown();
+            }
+        });
+
+        Arrays.asList("Sainath", "Foo", "Bar").forEach(name -> {
+            System.out.println("Sending: " + name);
+            requestStreamObserver.onNext(GreetEveryoneRequest.newBuilder()
+                    .setGreeting(Greeting.newBuilder().setFirstName(name))
+                    .build());
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
 
         requestStreamObserver.onCompleted();
 
