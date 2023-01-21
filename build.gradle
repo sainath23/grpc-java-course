@@ -32,6 +32,9 @@ dependencies {
     implementation 'io.grpc:grpc-stub:1.52.1'
     compileOnly 'org.apache.tomcat:annotations-api:6.0.53' // necessary for Java 9+
     implementation 'io.grpc:grpc-services:1.52.1' // reflection
+    implementation 'org.mongodb:mongodb-driver-sync:4.8.2'
+    implementation 'org.slf4j:slf4j-api:2.0.6'
+    testImplementation 'org.slf4j:slf4j-simple:2.0.6'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
 }
