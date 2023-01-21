@@ -16,6 +16,7 @@ public class GreetingServer {
 //                .addService(new GreetServiceImpl())
 //                .build();
 
+        // Secured channel
         Server server = ServerBuilder.forPort(50051)
                         .addService(new GreetServiceImpl())
                         .useTransportSecurity(
