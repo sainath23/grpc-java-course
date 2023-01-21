@@ -2,6 +2,7 @@ package com.sainath.grpc.greeting.server;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.protobuf.services.ProtoReflectionService;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,6 +20,7 @@ public class GreetingServer {
         // Secured channel
         Server server = ServerBuilder.forPort(50051)
                         .addService(new GreetServiceImpl())
+                        .addService(ProtoReflectionService.newInstance()) // reflection
                         .useTransportSecurity(
                                 new File("ssl/server.crt"),
                                 new File("ssl/server.pem")
