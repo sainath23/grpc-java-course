@@ -8,11 +8,16 @@ import com.proto.greet.GreetResponse;
 import com.proto.greet.GreetServiceGrpc;
 import com.proto.greet.GreetServiceGrpc.GreetServiceStub;
 import com.proto.greet.GreetServiceGrpc.GreetServiceBlockingStub;
+import com.proto.greet.GreetWithDeadlineRequest;
+import com.proto.greet.GreetWithDeadlineResponse;
 import com.proto.greet.Greeting;
 import com.proto.greet.LongGreetRequest;
 import com.proto.greet.LongGreetResponse;
+import io.grpc.Deadline;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 import java.util.Arrays;
@@ -34,7 +39,8 @@ public class GreetingClient {
         //doUnaryCall(channel);
         //doServerStreamingCall(channel);
         //doClientStreamingCall(channel);
-        doBiDirectionalStreamingCall(channel);
+        //doBiDirectionalStreamingCall(channel);
+        doUnaryCallWithDeadline(channel);
 
         System.out.println("Shutting down channel");
         channel.shutdown();
@@ -169,6 +175,54 @@ public class GreetingClient {
             countDownLatch.await(3, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static void doUnaryCallWithDeadline(ManagedChannel channel) {
+        System.out.println("Creating a stub");
+        // Created greet service client (blocking - sync)
+        GreetServiceBlockingStub syncGreetClient = GreetServiceGrpc.newBlockingStub(channel);
+
+        // Created a protocol buffer greeting message
+        Greeting greeting = Greeting.newBuilder()
+                .setFirstName("Sainath")
+                .setLastName("Parkar")
+                .build();
+
+        // Created greet request
+        GreetWithDeadlineRequest request = GreetWithDeadlineRequest.newBuilder()
+                .setGreeting(greeting).build();
+
+        // first call 500 ms deadline
+        try {
+            System.out.println("Sending a request with deadline of 3000 ms");
+            GreetWithDeadlineResponse response = syncGreetClient
+                    .withDeadline(Deadline.after(3000, TimeUnit.MILLISECONDS))
+                    .greetWithDeadline(request);
+
+            System.out.println("Response: " + response.getResult());
+        } catch (StatusRuntimeException e) {
+            if (e.getStatus() == Status.DEADLINE_EXCEEDED) {
+                System.out.println("Deadline has been exceeded, we don't want the response");
+            } else {
+                e.printStackTrace();
+            }
+        }
+
+        // first call 500 ms deadline
+        try {
+            System.out.println("Sending a request with deadline of 100 ms");
+            GreetWithDeadlineResponse response = syncGreetClient
+                    .withDeadline(Deadline.after(100, TimeUnit.MILLISECONDS))
+                    .greetWithDeadline(request);
+
+            System.out.println("Response: " + response.getResult());
+        } catch (StatusRuntimeException e) {
+            if (e.getStatus() == Status.DEADLINE_EXCEEDED) {
+                System.out.println("Deadline has been exceeded, we don't want the response");
+            } else {
+                e.printStackTrace();
+            }
         }
     }
 
